@@ -1,0 +1,16 @@
+BovesParser:
+ ☐ Traduzir código para inglês @low @created(16-01-11 13:14)
+ ☐ Documentar código @high
+
+--- ✄ -------------------------
+
+src/bovesparser.py:
+ ☐ Implementar filtros @exportar_sql @low @created(16-01-11 13:11)
+ ☐ Implementar outros formatos suportados de SQL (Oracle, MySQL) @exportar_sql @low @created(16-01-11 13:11)
+ ☐ Implementar @exportar_xlsx @low @created(16-01-11 13:13)
+
+
+
+＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿
+Archive:
+ ✔ Implementar @exportar_csv @low @created(16-01-11 13:13) @done (16-01-11 14:09)
