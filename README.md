@@ -1,7 +1,6 @@
 # BovesParser
 Um parser para os arquivos de histórico de cotações da BM&amp;F Bovespa
 
-<<<<<<< HEAD
 ### Links úteis
 #### Cotações
 [Cotações Históricas](http://www.bmfbovespa.com.br/pt-br/cotacoes-historicas/FormSeriesHistoricas.asp)
@@ -38,4 +37,3 @@ Um parser para os arquivos de histórico de cotações da BM&amp;F Bovespa
 ###### Projetos similares no GitHub
 * [Busca 1](https://github.com/search?utf8=%E2%9C%93&q=bovespa)
 * [Busca 2](https://github.com/search?utf8=%E2%9C%93&q=bovespa+c)
->>>>>>> 1a836d1cbdc6e193991690da5902d1f81d60f3bf

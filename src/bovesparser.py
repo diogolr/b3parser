@@ -283,6 +283,8 @@ class BovesParser( object ):
         for item in ( zip( *dados ) ):
             writer.writerow( item )
 
+        arquivo.close()
+
 
     def exportar_sql(
         self,
