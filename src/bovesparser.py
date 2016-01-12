@@ -4,6 +4,9 @@ import json
 import re
 
 from datetime import datetime
+from datetime import timezone
+
+from mongolabgae import MongoLabRestClient
 
 from src.regex import regex_cabecalho
 from src.regex import regex_cauda
@@ -50,6 +53,381 @@ class BovesParser( object ):
                 'pasta indicada.'.format( self.endereco_arquivo )
             )
             exit( 1 )
+
+
+    def colunas( self ):
+        return [
+            'data_pregao',
+            'cod_bdi',
+            'cod_papel',
+            'tp_merc',
+            'nome_resum',
+            'espec_papel',
+            'prazo_dias_termo',
+            'moeda',
+            'preco_abertura',
+            'preco_maximo',
+            'preco_minimo',
+            'preco_medio',
+            'preco_ultimo',
+            'preco_melhor_compra',
+            'preco_melhor_venda',
+            'num_negocios',
+            'qtde_titulos',
+            'vol_titulos',
+            'preco_exerc',
+            'indicador_correcao',
+            'data_vencimento',
+            'fator_cotacao',
+            'preco_exerc_pontos',
+            'cod_isi',
+            'distribuicao_papel',
+        ]
+
+
+    def dados( self ):
+        return [
+            self.data_pregao,
+            self.cod_bdi,
+            self.cod_papel,
+            self.tp_merc,
+            self.nome_resum,
+            self.espec_papel,
+            self.prazo_dias_termo,
+            self.moeda,
+            self.preco_abertura,
+            self.preco_maximo,
+            self.preco_minimo,
+            self.preco_medio,
+            self.preco_ultimo,
+            self.preco_melhor_compra,
+            self.preco_melhor_venda,
+            self.num_negocios,
+            self.qtde_titulos,
+            self.vol_titulos,
+            self.preco_exerc,
+            self.indicador_correcao,
+            self.data_vencimento,
+            self.fator_cotacao,
+            self.preco_exerc_pontos,
+            self.cod_isi,
+            self.distribuicao_papel,
+        ]
+
+
+    def exportar_mongolab(
+        self,
+        banco_dados = None,
+        colecao = None,
+        api_key = None
+    ):
+        '''
+        Exporta os dados interpretados para um banco de dados MongoDB através
+        do driver pymongo.
+
+        "dados": Os dados a serem inseridos no banco de dados
+
+        "banco_dados": Nome do banco de dados que será acessado
+
+        "colecao": Nome da coleção em que os dados serão inseridos
+
+        "api_key": APIKEY do usuário mongolab
+
+        '''
+
+        if banco_dados is None:
+            print(
+                'O parâmetro "banco_dados" não foi configurado corretamente.'
+            )
+
+            return
+
+        if colecao is None:
+            print(
+                'O parâmetro "colecao" não foi configurado corretamente.'
+            )
+
+            return
+
+        if api_key is None:
+            print(
+                'O parâmetro "api_key" não foi configurado corretamente.'
+            )
+
+            return
+
+        # Dados
+        array = []
+
+        for i, linha in enumerate( zip( *self.dados()[:10] ) ):
+            dicionario = {}
+
+            for j, item in enumerate( linha ):
+                if type( item ) == datetime:
+                    dicionario[ self.colunas()[ j ] ] = {
+                        '$date': item.isoformat()
+                    }
+
+                else:
+                    dicionario[ self.colunas()[ j ] ] = item
+
+            array.append( dicionario )
+
+        dados = json.dumps( array, indent = 4 )
+
+        cliente = MongoLabRestClient( api_key = api_key, debug = True )
+
+        resp = cliente.insert(
+            db_name = banco_dados,
+            collection_name = colecao,
+            docs = dados,
+        )
+
+        print( resp )
+
+    def exportar_csv(
+        self,
+        endereco_arquivo = None,
+        delimitador = ';',
+        quote = '|',
+        filtros = None,
+        incluir_cabecalho = True,
+    ):
+        '''
+        Exporta os dados interpretados para o formato CSV.
+        '''
+
+        if endereco_arquivo is None:
+            print(
+                'O endereço do arquivo não foi especificado. Especifique o '
+                'endereço do arquivo e tente novamente.'
+            )
+            return
+
+        endereco = endereco_arquivo
+
+        # Adicionando a extensão *.csv caso não tenha sido especificada
+        if not endereco.endswith( '.csv' ):
+            endereco += '.csv'
+
+        try:
+            arquivo = open(
+                file = endereco, mode = 'w', newline = '', encoding = 'utf-8'
+            )
+
+        except OSError:
+            print(
+                'Ocorreu um erro durante o processo de escrita do arquivo '
+                '"{0}". Verifique se você possui permissão de escrita ou se '
+                'o arquivo está aberto e tente novamente.'.format( endereco )
+            )
+            return
+
+        writer = csv.writer(
+            arquivo,
+            delimiter = delimitador,
+            quotechar = quote,
+            quoting = csv.QUOTE_MINIMAL
+        )
+
+        if incluir_cabecalho:
+            writer.writerow( self.colunas() )
+
+        for item in ( zip( *self.dados() ) ):
+            writer.writerow( item )
+
+        arquivo.close()
+
+
+    def exportar_json(
+        self,
+        endereco_arquivo = None,
+        chave_data = '$date',
+        filtros = None,
+    ):
+        '''
+        Exporta os dados interpretados para o formato JSON.
+        '''
+
+        if endereco_arquivo is None:
+            print(
+                'O endereço do arquivo não foi especificado. Especifique o '
+                'endereço do arquivo e tente novamente.'
+            )
+            return
+
+        endereco = endereco_arquivo
+
+        # Adicionando a extensão *.json caso não tenha sido especificada
+        if not endereco.endswith( '.json' ):
+            endereco += '.json'
+
+        try:
+            arquivo = open(
+                file = endereco, mode = 'w', newline = '', encoding = 'utf-8'
+            )
+
+        except OSError:
+            print(
+                'Ocorreu um erro durante o processo de escrita do arquivo '
+                '"{0}". Verifique se você possui permissão de escrita ou se '
+                'o arquivo está aberto e tente novamente.'.format( endereco )
+            )
+            return
+
+        array = []
+
+        for i, linha in enumerate( zip( *self.dados() ) ):
+            dicionario = {}
+
+            for j, item in enumerate( linha ):
+                if type( item ) == datetime:
+                    if chave_data is not None and chave_data != '':
+                        dicionario[ self.colunas()[ j ] ] = {
+                            chave_data: item.isoformat()
+                        }
+                    else:
+                        dicionario[ self.colunas()[ j ] ] = item.isoformat()
+
+                else:
+                    dicionario[ self.colunas()[ j ] ] = item
+
+            array.append( dicionario )
+
+        resultado = json.dumps( array, indent = 4 )
+
+        arquivo.write( resultado )
+        arquivo.close()
+
+
+    def exportar_sql(
+        self,
+        endereco_arquivo = None,
+        nome_tabela = 'cotacoes',
+        formato = 'PostgreSQL',
+        filtros = None,
+    ):
+        '''
+        Exporta os dados interpretados para o formato SQL de acordo com o
+        formato de banco de dados e filtros especificados.
+        '''
+
+        if endereco_arquivo is None:
+            print(
+                'O endereço do arquivo não foi especificado. Especifique o '
+                'endereço do arquivo e tente novamente.'
+            )
+            return
+
+        # Formatos de SQL suportados
+        if formato.lower() not in self.formato_sql:
+            print(
+                'O formato SQL não suporta comando INSERT para o Banco de '
+                'Dados {0}. Selecione um dos seguintes formatos: {1}'.format(
+                    formato,
+                    self.formato_sql,
+                )
+            )
+
+        # Endereço do arquivo
+        endereco = endereco_arquivo
+
+        # Adicionando a extensão *.sql caso não tenha sido especificada
+        if not endereco.endswith( '.sql' ):
+            endereco += '.sql'
+
+        try:
+            arquivo = open( file = endereco, mode = 'w', encoding = 'utf-8' )
+
+        except OSError:
+            print(
+                'Ocorreu um erro durante o processo de escrita do arquivo '
+                '"{0}". Verifique se você possui permissão de escrita ou se '
+                'o arquivo está aberto e tente novamente.'.format( endereco )
+            )
+            return
+
+        # PostgreSQL
+        if formato.lower() == 'postgresql' or formato.lower() == 'pgsql':
+            arquivo.write(
+                'INSERT INTO {0} ( '
+                'data_pregao, cod_bdi, cod_papel, tp_merc, nome_resum, '
+                'espec_papel, prazo_dias_termo, moeda, preco_abertura, '
+                'preco_maximo, preco_minimo, preco_medio, preco_ultimo, '
+                'preco_melhor_compra, preco_melhor_venda, num_negocios, '
+                'qtde_titulos, vol_titulos, preco_exerc, indicador_correcao, '
+                'data_vencimento, fator_cotacao, preco_exerc_pontos, cod_isi, '
+                'distribuicao_papel ) '
+                'VALUES\n'.format( nome_tabela )
+            )
+
+            for i, item in enumerate( self.data_pregao ):
+                arquivo.write(
+                    '('
+                    '\'{0}\', '   # data_pregao
+                    '\'{1}\', '   # cod_bdi
+                    '\'{2}\', '   # cod_papel
+                    '\'{3}\', '   # tp_merc
+                    '\'{4}\', '   # nome_resum
+                    '\'{5}\', '   # espec_papel
+                    '{6}, '   # prazo_dias_termo
+                    '\'{7}\', '   # moeda
+                    '{8}, '       # preco_abertura
+                    '{9}, '       # preco_maximo
+                    '{10}, '      # preco_minimo
+                    '{11}, '      # preco_medio
+                    '{12}, '      # preco_ultimo
+                    '{13}, '      # preco_melhor_compra
+                    '{14}, '      # preco_melhor_venda
+                    '{15}, '      # num_negocios
+                    '{16}, '      # qtde_titulos
+                    '{17}, '      # vol_titulos
+                    '{18}, '      # preco_exerc
+                    '{19}, '      # indicador_correcao
+                    '\'{20}\', '  # data_vencimento
+                    '{21}, '      # fator_cotacao
+                    '\'{22}\', '  # preco_exerc_pontos
+                    '\'{23}\', '  # cod_isi
+                    '\'{24}\''    # distribuicao_papel
+                    ')'.format(
+                        self.data_pregao[ i ].isoformat(),
+                        self.cod_bdi[ i ],
+                        self.cod_papel[ i ],
+                        self.tp_merc[ i ],
+                        self.nome_resum[ i ],
+                        self.espec_papel[ i ],
+                        self.prazo_dias_termo[ i ],
+                        self.moeda[ i ],
+                        self.preco_abertura[ i ],
+                        self.preco_maximo[ i ],
+                        self.preco_minimo[ i ],
+                        self.preco_medio[ i ],
+                        self.preco_ultimo[ i ],
+                        self.preco_melhor_compra[ i ],
+                        self.preco_melhor_venda[ i ],
+                        self.num_negocios[ i ],
+                        self.qtde_titulos[ i ],
+                        self.vol_titulos[ i ],
+                        self.preco_exerc[ i ],
+                        self.indicador_correcao[ i ],
+                        self.data_vencimento[ i ].isoformat(),
+                        self.fator_cotacao[ i ],
+                        self.preco_exerc_pontos[ i ],
+                        self.cod_isi[ i ],
+                        self.distribuicao_papel[ i ],
+                    )
+                )
+
+                if i < len( self.data_pregao ) - 1:
+                    arquivo.write( ',\n' )
+                else:
+                    arquivo.write( ';' )
+
+        arquivo.close()
+
+
+    def exportar_xlsx( self, endereco_arquivo = None ):
+        pass
 
 
     def ler_arquivo( self ):
@@ -208,352 +586,6 @@ class BovesParser( object ):
                 elif chave == 'distribuicao_papel':
                     self.distribuicao_papel.append( valor.strip() )
 
-
-    def exportar_csv(
-        self,
-        endereco_arquivo = None,
-        delimitador = ';',
-        quote = '|',
-        filtros = None,
-        incluir_cabecalho = True,
-    ):
-        '''
-        Exporta os dados interpretados para o formato CSV.
-        '''
-
-        if endereco_arquivo is None:
-            print(
-                'O endereço do arquivo não foi especificado. Especifique o '
-                'endereço do arquivo e tente novamente.'
-            )
-            return
-
-        endereco = endereco_arquivo
-
-        # Adicionando a extensão *.csv caso não tenha sido especificada
-        if not endereco.endswith( '.csv' ):
-            endereco += '.csv'
-
-        try:
-            arquivo = open(
-                file = endereco, mode = 'w', newline = '', encoding = 'utf-8'
-            )
-
-        except OSError:
-            print(
-                'Ocorreu um erro durante o processo de escrita do arquivo '
-                '"{0}". Verifique se você possui permissão de escrita ou se '
-                'o arquivo está aberto e tente novamente.'.format( endereco )
-            )
-            return
-
-        writer = csv.writer(
-            arquivo,
-            delimiter = delimitador,
-            quotechar = quote,
-            quoting = csv.QUOTE_MINIMAL
-        )
-
-        dados = [
-            self.data_pregao,
-            self.cod_bdi,
-            self.cod_papel,
-            self.tp_merc,
-            self.nome_resum,
-            self.espec_papel,
-            self.prazo_dias_termo,
-            self.moeda,
-            self.preco_abertura,
-            self.preco_maximo,
-            self.preco_minimo,
-            self.preco_medio,
-            self.preco_ultimo,
-            self.preco_melhor_compra,
-            self.preco_melhor_venda,
-            self.num_negocios,
-            self.qtde_titulos,
-            self.vol_titulos,
-            self.preco_exerc,
-            self.indicador_correcao,
-            self.data_vencimento,
-            self.fator_cotacao,
-            self.preco_exerc_pontos,
-            self.cod_isi,
-            self.distribuicao_papel,
-        ]
-
-        if incluir_cabecalho:
-            cabecalho = [
-                'data_pregao',
-                'cod_bdi',
-                'cod_papel',
-                'tp_merc',
-                'nome_resum',
-                'espec_papel',
-                'prazo_dias_termo',
-                'moeda',
-                'preco_abertura',
-                'preco_maximo',
-                'preco_minimo',
-                'preco_medio',
-                'preco_ultimo',
-                'preco_melhor_compra',
-                'preco_melhor_venda',
-                'num_negocios',
-                'qtde_titulos',
-                'vol_titulos',
-                'preco_exerc',
-                'indicador_correcao',
-                'data_vencimento',
-                'fator_cotacao',
-                'preco_exerc_pontos',
-                'cod_isi',
-                'distribuicao_papel',
-            ]
-
-            writer.writerow( cabecalho )
-
-        for item in ( zip( *dados ) ):
-            writer.writerow( item )
-
-        arquivo.close()
-
-
-    def exportar_json(
-        self,
-        endereco_arquivo = None,
-        filtros = None,
-        incluir_cabecalho = True,
-    ):
-        '''
-        Exporta os dados interpretados para o formato JSON.
-        '''
-
-        if endereco_arquivo is None:
-            print(
-                'O endereço do arquivo não foi especificado. Especifique o '
-                'endereço do arquivo e tente novamente.'
-            )
-            return
-
-        endereco = endereco_arquivo
-
-        # Adicionando a extensão *.json caso não tenha sido especificada
-        if not endereco.endswith( '.json' ):
-            endereco += '.json'
-
-        try:
-            arquivo = open(
-                file = endereco, mode = 'w', newline = '', encoding = 'utf-8'
-            )
-
-        except OSError:
-            print(
-                'Ocorreu um erro durante o processo de escrita do arquivo '
-                '"{0}". Verifique se você possui permissão de escrita ou se '
-                'o arquivo está aberto e tente novamente.'.format( endereco )
-            )
-            return
-
-        dados = [
-            self.data_pregao,
-            self.cod_bdi,
-            self.cod_papel,
-            self.tp_merc,
-            self.nome_resum,
-            self.espec_papel,
-            self.prazo_dias_termo,
-            self.moeda,
-            self.preco_abertura,
-            self.preco_maximo,
-            self.preco_minimo,
-            self.preco_medio,
-            self.preco_ultimo,
-            self.preco_melhor_compra,
-            self.preco_melhor_venda,
-            self.num_negocios,
-            self.qtde_titulos,
-            self.vol_titulos,
-            self.preco_exerc,
-            self.indicador_correcao,
-            self.data_vencimento,
-            self.fator_cotacao,
-            self.preco_exerc_pontos,
-            self.cod_isi,
-            self.distribuicao_papel,
-        ]
-
-        colunas = [
-            'data_pregao',
-            'cod_bdi',
-            'cod_papel',
-            'tp_merc',
-            'nome_resum',
-            'espec_papel',
-            'prazo_dias_termo',
-            'moeda',
-            'preco_abertura',
-            'preco_maximo',
-            'preco_minimo',
-            'preco_medio',
-            'preco_ultimo',
-            'preco_melhor_compra',
-            'preco_melhor_venda',
-            'num_negocios',
-            'qtde_titulos',
-            'vol_titulos',
-            'preco_exerc',
-            'indicador_correcao',
-            'data_vencimento',
-            'fator_cotacao',
-            'preco_exerc_pontos',
-            'cod_isi',
-            'distribuicao_papel',
-        ]
-
-        for i, linha in enumerate( zip( * dados ) ):
-            dicionario = {}
-
-            for j, item in enumerate( linha ):
-                if type( item ) == datetime:
-                    dicionario[ colunas[ j ] ] = item.isoformat()
-                else:
-                    dicionario[ colunas[ j ] ] = item
-
-            json.dump( dicionario, arquivo )
-            arquivo.write( '\n' )
-
-        arquivo.close()
-
-
-    def exportar_sql(
-        self,
-        endereco_arquivo = None,
-        nome_tabela = 'cotacoes',
-        formato = 'PostgreSQL',
-        filtros = None,
-    ):
-        '''
-        Exporta os dados interpretados para o formato SQL de acordo com o
-        formato de banco de dados e filtros especificados.
-        '''
-
-        if endereco_arquivo is None:
-            print(
-                'O endereço do arquivo não foi especificado. Especifique o '
-                'endereço do arquivo e tente novamente.'
-            )
-            return
-
-        # Formatos de SQL suportados
-        if formato.lower() not in self.formato_sql:
-            print(
-                'O formato SQL não suporta comando INSERT para o Banco de '
-                'Dados {0}. Selecione um dos seguintes formatos: {1}'.format(
-                    formato,
-                    self.formato_sql,
-                )
-            )
-
-        # Endereço do arquivo
-        endereco = endereco_arquivo
-
-        # Adicionando a extensão *.sql caso não tenha sido especificada
-        if not endereco.endswith( '.sql' ):
-            endereco += '.sql'
-
-        try:
-            arquivo = open( file = endereco, mode = 'w', encoding = 'utf-8' )
-
-        except OSError:
-            print(
-                'Ocorreu um erro durante o processo de escrita do arquivo '
-                '"{0}". Verifique se você possui permissão de escrita ou se '
-                'o arquivo está aberto e tente novamente.'.format( endereco )
-            )
-            return
-
-        # PostgreSQL
-        if formato.lower() == 'postgresql' or formato.lower() == 'pgsql':
-            arquivo.write(
-                'INSERT INTO {0} ( '
-                'data_pregao, cod_bdi, cod_papel, tp_merc, nome_resum, '
-                'espec_papel, prazo_dias_termo, moeda, preco_abertura, '
-                'preco_maximo, preco_minimo, preco_medio, preco_ultimo, '
-                'preco_melhor_compra, preco_melhor_venda, num_negocios, '
-                'qtde_titulos, vol_titulos, preco_exerc, indicador_correcao, '
-                'data_vencimento, fator_cotacao, preco_exerc_pontos, cod_isi, '
-                'distribuicao_papel ) '
-                'VALUES\n'.format( nome_tabela )
-            )
-
-            for i, item in enumerate( self.data_pregao ):
-                arquivo.write(
-                    '('
-                    '\'{0}\', '   # data_pregao
-                    '\'{1}\', '   # cod_bdi
-                    '\'{2}\', '   # cod_papel
-                    '\'{3}\', '   # tp_merc
-                    '\'{4}\', '   # nome_resum
-                    '\'{5}\', '   # espec_papel
-                    '{6}, '   # prazo_dias_termo
-                    '\'{7}\', '   # moeda
-                    '{8}, '       # preco_abertura
-                    '{9}, '       # preco_maximo
-                    '{10}, '      # preco_minimo
-                    '{11}, '      # preco_medio
-                    '{12}, '      # preco_ultimo
-                    '{13}, '      # preco_melhor_compra
-                    '{14}, '      # preco_melhor_venda
-                    '{15}, '      # num_negocios
-                    '{16}, '      # qtde_titulos
-                    '{17}, '      # vol_titulos
-                    '{18}, '      # preco_exerc
-                    '{19}, '      # indicador_correcao
-                    '\'{20}\', '  # data_vencimento
-                    '{21}, '      # fator_cotacao
-                    '\'{22}\', '  # preco_exerc_pontos
-                    '\'{23}\', '  # cod_isi
-                    '\'{24}\''    # distribuicao_papel
-                    ')'.format(
-                        self.data_pregao[ i ].isoformat(),
-                        self.cod_bdi[ i ],
-                        self.cod_papel[ i ],
-                        self.tp_merc[ i ],
-                        self.nome_resum[ i ],
-                        self.espec_papel[ i ],
-                        self.prazo_dias_termo[ i ],
-                        self.moeda[ i ],
-                        self.preco_abertura[ i ],
-                        self.preco_maximo[ i ],
-                        self.preco_minimo[ i ],
-                        self.preco_medio[ i ],
-                        self.preco_ultimo[ i ],
-                        self.preco_melhor_compra[ i ],
-                        self.preco_melhor_venda[ i ],
-                        self.num_negocios[ i ],
-                        self.qtde_titulos[ i ],
-                        self.vol_titulos[ i ],
-                        self.preco_exerc[ i ],
-                        self.indicador_correcao[ i ],
-                        self.data_vencimento[ i ].isoformat(),
-                        self.fator_cotacao[ i ],
-                        self.preco_exerc_pontos[ i ],
-                        self.cod_isi[ i ],
-                        self.distribuicao_papel[ i ],
-                    )
-                )
-
-                if i < len( self.data_pregao ) - 1:
-                    arquivo.write( ',\n' )
-                else:
-                    arquivo.write( ';' )
-
-        arquivo.close()
-
-
-    def exportar_xlsx( self, endereco_arquivo = None ):
-        pass
 
     # --------------------------------------------------------------------------
     # Atributos
