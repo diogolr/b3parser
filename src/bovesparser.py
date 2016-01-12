@@ -1,5 +1,6 @@
 # -*- encoding: utf-8 -*-
 import csv
+import json
 import re
 
 from datetime import datetime
@@ -214,6 +215,7 @@ class BovesParser( object ):
         delimitador = ';',
         quote = '|',
         filtros = None,
+        incluir_cabecalho = True,
     ):
         '''
         Exporta os dados interpretados para o formato CSV.
@@ -280,8 +282,146 @@ class BovesParser( object ):
             self.distribuicao_papel,
         ]
 
+        if incluir_cabecalho:
+            cabecalho = [
+                'data_pregao',
+                'cod_bdi',
+                'cod_papel',
+                'tp_merc',
+                'nome_resum',
+                'espec_papel',
+                'prazo_dias_termo',
+                'moeda',
+                'preco_abertura',
+                'preco_maximo',
+                'preco_minimo',
+                'preco_medio',
+                'preco_ultimo',
+                'preco_melhor_compra',
+                'preco_melhor_venda',
+                'num_negocios',
+                'qtde_titulos',
+                'vol_titulos',
+                'preco_exerc',
+                'indicador_correcao',
+                'data_vencimento',
+                'fator_cotacao',
+                'preco_exerc_pontos',
+                'cod_isi',
+                'distribuicao_papel',
+            ]
+
+            writer.writerow( cabecalho )
+
         for item in ( zip( *dados ) ):
             writer.writerow( item )
+
+        arquivo.close()
+
+
+    def exportar_json(
+        self,
+        endereco_arquivo = None,
+        filtros = None,
+        incluir_cabecalho = True,
+    ):
+        '''
+        Exporta os dados interpretados para o formato JSON.
+        '''
+
+        if endereco_arquivo is None:
+            print(
+                'O endereço do arquivo não foi especificado. Especifique o '
+                'endereço do arquivo e tente novamente.'
+            )
+            return
+
+        endereco = endereco_arquivo
+
+        # Adicionando a extensão *.json caso não tenha sido especificada
+        if not endereco.endswith( '.json' ):
+            endereco += '.json'
+
+        try:
+            arquivo = open(
+                file = endereco, mode = 'w', newline = '', encoding = 'utf-8'
+            )
+
+        except OSError:
+            print(
+                'Ocorreu um erro durante o processo de escrita do arquivo '
+                '"{0}". Verifique se você possui permissão de escrita ou se '
+                'o arquivo está aberto e tente novamente.'.format( endereco )
+            )
+            return
+
+        dados = [
+            self.data_pregao,
+            self.cod_bdi,
+            self.cod_papel,
+            self.tp_merc,
+            self.nome_resum,
+            self.espec_papel,
+            self.prazo_dias_termo,
+            self.moeda,
+            self.preco_abertura,
+            self.preco_maximo,
+            self.preco_minimo,
+            self.preco_medio,
+            self.preco_ultimo,
+            self.preco_melhor_compra,
+            self.preco_melhor_venda,
+            self.num_negocios,
+            self.qtde_titulos,
+            self.vol_titulos,
+            self.preco_exerc,
+            self.indicador_correcao,
+            self.data_vencimento,
+            self.fator_cotacao,
+            self.preco_exerc_pontos,
+            self.cod_isi,
+            self.distribuicao_papel,
+        ]
+
+        colunas = [
+            'data_pregao',
+            'cod_bdi',
+            'cod_papel',
+            'tp_merc',
+            'nome_resum',
+            'espec_papel',
+            'prazo_dias_termo',
+            'moeda',
+            'preco_abertura',
+            'preco_maximo',
+            'preco_minimo',
+            'preco_medio',
+            'preco_ultimo',
+            'preco_melhor_compra',
+            'preco_melhor_venda',
+            'num_negocios',
+            'qtde_titulos',
+            'vol_titulos',
+            'preco_exerc',
+            'indicador_correcao',
+            'data_vencimento',
+            'fator_cotacao',
+            'preco_exerc_pontos',
+            'cod_isi',
+            'distribuicao_papel',
+        ]
+
+        for i, linha in enumerate( zip( * dados ) ):
+            dicionario = {}
+
+            for j, item in enumerate( linha ):
+                if type( item ) == datetime:
+                    dicionario[ colunas[ j ] ] = item.isoformat()
+                else:
+                    dicionario[ colunas[ j ] ] = item
+
+            json.dump( dicionario, arquivo )
+            arquivo.write( '\n' )
 
         arquivo.close()
 
