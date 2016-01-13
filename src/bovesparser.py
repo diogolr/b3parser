@@ -4,10 +4,8 @@ import json
 import re
 
 from datetime import datetime
-from datetime import timezone
-
-from mongolabgae import MongoLabRestClient
-
+from bson import json_util
+from pymongo import MongoClient
 from src.regex import regex_cabecalho
 from src.regex import regex_cauda
 from src.regex import regex_cotacao
@@ -115,75 +113,63 @@ class BovesParser( object ):
         ]
 
 
-    def exportar_mongolab(
+    def exportar_mongodb(
         self,
+        usuario = None,
+        senha = None,
+        host = None,
+        porta = None,
         banco_dados = None,
         colecao = None,
-        api_key = None
     ):
         '''
         Exporta os dados interpretados para um banco de dados MongoDB através
         do driver pymongo.
 
-        "dados": Os dados a serem inseridos no banco de dados
-
+        "usuario": Nome do usuário que será utilizado para acessar o banco de
+                   dados
+        "senha": Senha do usuário que será utilizado para acessar o banco de
+                 dados
         "banco_dados": Nome do banco de dados que será acessado
-
         "colecao": Nome da coleção em que os dados serão inseridos
-
-        "api_key": APIKEY do usuário mongolab
-
         '''
-
-        if banco_dados is None:
-            print(
-                'O parâmetro "banco_dados" não foi configurado corretamente.'
-            )
-
-            return
-
-        if colecao is None:
-            print(
-                'O parâmetro "colecao" não foi configurado corretamente.'
-            )
-
-            return
-
-        if api_key is None:
-            print(
-                'O parâmetro "api_key" não foi configurado corretamente.'
-            )
-
-            return
 
         # Dados
         array = []
 
-        for i, linha in enumerate( zip( *self.dados()[:10] ) ):
+        # for i, linha in enumerate( zip( *self.dados() ) ):
+        for i, linha in enumerate( zip( *( self.dados()[:10] ) ) ):
             dicionario = {}
 
             for j, item in enumerate( linha ):
-                if type( item ) == datetime:
-                    dicionario[ self.colunas()[ j ] ] = {
-                        '$date': item.isoformat()
-                    }
-
-                else:
-                    dicionario[ self.colunas()[ j ] ] = item
+                dicionario[ self.colunas()[ j ] ] = item
 
             array.append( dicionario )
 
-        dados = json.dumps( array, indent = 4 )
-
-        cliente = MongoLabRestClient( api_key = api_key, debug = True )
-
-        resp = cliente.insert(
-            db_name = banco_dados,
-            collection_name = colecao,
-            docs = dados,
+        cliente = MongoClient(
+            'mongodb://'
+            '{usuario}'
+            ':'
+            '{senha}'
+            '@'
+            '{host}'
+            ':'
+            '{porta}'
+            '/'
+            '{banco_dados}'.format(
+                usuario = usuario,
+                senha = senha,
+                host = host,
+                porta = porta,
+                banco_dados = banco_dados,
+            )
         )
 
-        print( resp )
+        db = cliente[ banco_dados ]
+        colecao = db[ colecao ]
+
+        return colecao.insert_many( array )
+
 
     def exportar_csv(
         self,
@@ -242,7 +228,6 @@ class BovesParser( object ):
     def exportar_json(
         self,
         endereco_arquivo = None,
-        chave_data = '$date',
         filtros = None,
     ):
         '''
@@ -281,20 +266,11 @@ class BovesParser( object ):
             dicionario = {}
 
             for j, item in enumerate( linha ):
-                if type( item ) == datetime:
-                    if chave_data is not None and chave_data != '':
-                        dicionario[ self.colunas()[ j ] ] = {
-                            chave_data: item.isoformat()
-                        }
-                    else:
-                        dicionario[ self.colunas()[ j ] ] = item.isoformat()
-
-                else:
-                    dicionario[ self.colunas()[ j ] ] = item
+                dicionario[ self.colunas()[ j ] ] = item
 
             array.append( dicionario )
 
-        resultado = json.dumps( array, indent = 4 )
+        resultado = json.dumps( array, indent = 4, default = json_util.default )
 
         arquivo.write( resultado )
         arquivo.close()
