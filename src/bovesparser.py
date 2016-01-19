@@ -1,6 +1,7 @@
 # -*- encoding: utf-8 -*-
 import csv
 import json
+import locale
 import re
 
 from datetime import datetime
@@ -84,33 +85,12 @@ class BovesParser( object ):
 
 
     def dados( self ):
-        return [
-            self.data_pregao,
-            self.cod_bdi,
-            self.cod_papel,
-            self.tp_merc,
-            self.nome_resum,
-            self.espec_papel,
-            self.prazo_dias_termo,
-            self.moeda,
-            self.preco_abertura,
-            self.preco_maximo,
-            self.preco_minimo,
-            self.preco_medio,
-            self.preco_ultimo,
-            self.preco_melhor_compra,
-            self.preco_melhor_venda,
-            self.num_negocios,
-            self.qtde_titulos,
-            self.vol_titulos,
-            self.preco_exerc,
-            self.indicador_correcao,
-            self.data_vencimento,
-            self.fator_cotacao,
-            self.preco_exerc_pontos,
-            self.cod_isi,
-            self.distribuicao_papel,
-        ]
+        dados = []
+
+        for i, item in enumerate( self.filtros ):
+            dados.append( getattr( self, item ) )
+
+        return dados
 
 
     def exportar_mongodb(
@@ -130,6 +110,8 @@ class BovesParser( object ):
                    dados
         "senha": Senha do usuário que será utilizado para acessar o banco de
                  dados
+        "host": Host em que se encontra o banco de dados
+        "porta": Porta de conexão com o host do banco de dados
         "banco_dados": Nome do banco de dados que será acessado
         "colecao": Nome da coleção em que os dados serão inseridos
         '''
@@ -137,12 +119,11 @@ class BovesParser( object ):
         # Dados
         array = []
 
-        # for i, linha in enumerate( zip( *self.dados() ) ):
-        for i, linha in enumerate( zip( *( self.dados()[:10] ) ) ):
+        for i, linha in enumerate( zip( *self.dados() ) ):
             dicionario = {}
 
             for j, item in enumerate( linha ):
-                dicionario[ self.colunas()[ j ] ] = item
+                dicionario[ self.filtros[ j ] ] = item
 
             array.append( dicionario )
 
@@ -176,7 +157,6 @@ class BovesParser( object ):
         endereco_arquivo = None,
         delimitador = ';',
         quote = '|',
-        filtros = None,
         incluir_cabecalho = True,
     ):
         '''
@@ -217,7 +197,7 @@ class BovesParser( object ):
         )
 
         if incluir_cabecalho:
-            writer.writerow( self.colunas() )
+            writer.writerow( self.filtros )
 
         for item in ( zip( *self.dados() ) ):
             writer.writerow( item )
@@ -228,7 +208,6 @@ class BovesParser( object ):
     def exportar_json(
         self,
         endereco_arquivo = None,
-        filtros = None,
     ):
         '''
         Exporta os dados interpretados para o formato JSON.
@@ -266,7 +245,7 @@ class BovesParser( object ):
             dicionario = {}
 
             for j, item in enumerate( linha ):
-                dicionario[ self.colunas()[ j ] ] = item
+                dicionario[ self.filtros[ j ] ] = item
 
             array.append( dicionario )
 
@@ -281,11 +260,10 @@ class BovesParser( object ):
         endereco_arquivo = None,
         nome_tabela = 'cotacoes',
         formato = 'PostgreSQL',
-        filtros = None,
     ):
         '''
         Exporta os dados interpretados para o formato SQL de acordo com o
-        formato de banco de dados e filtros especificados.
+        formato de banco de dados.
         '''
 
         if endereco_arquivo is None:
@@ -326,75 +304,49 @@ class BovesParser( object ):
         # PostgreSQL
         if formato.lower() == 'postgresql' or formato.lower() == 'pgsql':
             arquivo.write(
-                'INSERT INTO {0} ( '
-                'data_pregao, cod_bdi, cod_papel, tp_merc, nome_resum, '
-                'espec_papel, prazo_dias_termo, moeda, preco_abertura, '
-                'preco_maximo, preco_minimo, preco_medio, preco_ultimo, '
-                'preco_melhor_compra, preco_melhor_venda, num_negocios, '
-                'qtde_titulos, vol_titulos, preco_exerc, indicador_correcao, '
-                'data_vencimento, fator_cotacao, preco_exerc_pontos, cod_isi, '
-                'distribuicao_papel ) '
-                'VALUES\n'.format( nome_tabela )
+                'INSERT INTO {0} ({1}) '
+                'VALUES\n'.format(
+                    nome_tabela,
+                    ','.join( self.filtros )
+                )
             )
 
-            for i, item in enumerate( self.data_pregao ):
-                arquivo.write(
-                    '('
-                    '\'{0}\', '   # data_pregao
-                    '\'{1}\', '   # cod_bdi
-                    '\'{2}\', '   # cod_papel
-                    '\'{3}\', '   # tp_merc
-                    '\'{4}\', '   # nome_resum
-                    '\'{5}\', '   # espec_papel
-                    '{6}, '   # prazo_dias_termo
-                    '\'{7}\', '   # moeda
-                    '{8}, '       # preco_abertura
-                    '{9}, '       # preco_maximo
-                    '{10}, '      # preco_minimo
-                    '{11}, '      # preco_medio
-                    '{12}, '      # preco_ultimo
-                    '{13}, '      # preco_melhor_compra
-                    '{14}, '      # preco_melhor_venda
-                    '{15}, '      # num_negocios
-                    '{16}, '      # qtde_titulos
-                    '{17}, '      # vol_titulos
-                    '{18}, '      # preco_exerc
-                    '{19}, '      # indicador_correcao
-                    '\'{20}\', '  # data_vencimento
-                    '{21}, '      # fator_cotacao
-                    '\'{22}\', '  # preco_exerc_pontos
-                    '\'{23}\', '  # cod_isi
-                    '\'{24}\''    # distribuicao_papel
-                    ')'.format(
-                        self.data_pregao[ i ].isoformat(),
-                        self.cod_bdi[ i ],
-                        self.cod_papel[ i ],
-                        self.tp_merc[ i ],
-                        self.nome_resum[ i ],
-                        self.espec_papel[ i ],
-                        self.prazo_dias_termo[ i ],
-                        self.moeda[ i ],
-                        self.preco_abertura[ i ],
-                        self.preco_maximo[ i ],
-                        self.preco_minimo[ i ],
-                        self.preco_medio[ i ],
-                        self.preco_ultimo[ i ],
-                        self.preco_melhor_compra[ i ],
-                        self.preco_melhor_venda[ i ],
-                        self.num_negocios[ i ],
-                        self.qtde_titulos[ i ],
-                        self.vol_titulos[ i ],
-                        self.preco_exerc[ i ],
-                        self.indicador_correcao[ i ],
-                        self.data_vencimento[ i ].isoformat(),
-                        self.fator_cotacao[ i ],
-                        self.preco_exerc_pontos[ i ],
-                        self.cod_isi[ i ],
-                        self.distribuicao_papel[ i ],
-                    )
-                )
+            dados = list( zip( *self.dados() ) )
 
-                if i < len( self.data_pregao ) - 1:
+            for i, linha in enumerate( dados ):
+                string = '({0})'
+
+                substring = ''
+
+                for j, item in enumerate( linha ):
+                    substring += '{0}{1}{2}'
+
+                    if self.filtros[ j ] in [
+                        'data_pregao',
+                        'cod_bdi',
+                        'cod_papel',
+                        'tp_merc',
+                        'nome_resum',
+                        'espec_papel',
+                        'moeda',
+                        'data_vencimento',
+                        'preco_exerc_pontos',
+                        'cod_isi',
+                        'distribuicao_papel',
+                    ]:
+                        substring = substring.format( '\'', item, '\'' )
+
+                    else:
+                        substring = substring.format( '', item, '' )
+
+                    if j < len( linha ) - 1:
+                        substring += ','
+
+                string = string.format( substring )
+
+                arquivo.write( string )
+
+                if i < len( dados ) - 1:
                     arquivo.write( ',\n' )
                 else:
                     arquivo.write( ';' )
@@ -406,17 +358,42 @@ class BovesParser( object ):
         pass
 
 
-    def ler_arquivo( self ):
+    def ler_arquivo( self, filtros = None ):
+        '''
+        Lê o arquivo configurado no construtor do objeto de acordo com os
+        filtros selecionados.
+
+        "filtros": Lista com os nomes das colunas que devem ser consideradas. Se
+                   a lista não for configurada, serão consideradas todas as
+                   colunas pré-configuradas (ver método colunas()).
+        '''
         if self.arquivo is None:
             print(
                 'O arquivo não foi aberto corretamente.'
             )
             exit( 1 )
 
+        # Configuração do padrão de hora local
+        # Windows --------------------------------------------------------------
+        # https://msdn.microsoft.com/en-us/library/39cwe7zf(vs.71).aspx
+        # http://msdn.microsoft.com/en-us/library/cdax410z%28VS.71%29.aspx
+        locale.setlocale( locale.LC_ALL, 'ptb' )
+
         regex_cab = re.compile( regex_cabecalho )
         regex_cau = re.compile( regex_cauda )
         regex_cot = re.compile( regex_cotacao )
 
+        # Determinando as colunas que serão filtradas
+        self.filtros = self.colunas()
+
+        if filtros is not None:
+            lista = self.colunas()
+
+            for i, item in enumerate( lista ):
+                if item not in filtros:
+                    del self.filtros[ self.filtros.index( item ) ]
+
+        # Lendo o arquivo
         for i, linha in enumerate( self.arquivo ):
             # Cabeçalho
             match = regex_cab.match( linha )
@@ -452,27 +429,30 @@ class BovesParser( object ):
                 elif chave == 'num_registros':
                     self.num_registros = int( valor )
 
-                elif chave == 'data_pregao':
+                elif chave == 'data_pregao' and 'data_pregao' in self.filtros:
                     self.data_pregao.append(
                         datetime.strptime( valor, '%Y%m%d' )
                     )
 
-                elif chave == 'cod_bdi':
+                elif chave == 'cod_bdi' and 'cod_bdi' in self.filtros:
                     self.cod_bdi.append( valor.strip() )
 
-                elif chave == 'cod_papel':
+                elif chave == 'cod_papel' and 'cod_papel' in self.filtros:
                     self.cod_papel.append( valor.strip() )
 
-                elif chave == 'tp_merc':
+                elif chave == 'tp_merc' and 'tp_merc' in self.filtros:
                     self.tp_merc.append( valor.strip() )
 
-                elif chave == 'nome_resum':
+                elif chave == 'nome_resum' and 'nome_resum' in self.filtros:
                     self.nome_resum.append( valor.strip() )
 
-                elif chave == 'espec_papel':
+                elif chave == 'espec_papel' and 'espec_papel' in self.filtros:
                     self.espec_papel.append( valor.strip() )
 
-                elif chave == 'prazo_dias_termo':
+                elif (
+                    chave == 'prazo_dias_termo' and
+                    'prazo_dias_termo' in self.filtros
+                ):
                     if valor.strip() is None or valor.strip() == '':
                         self.prazo_dias_termo.append( 0 )
                     else:
@@ -480,86 +460,110 @@ class BovesParser( object ):
                             int( valor.strip() )
                         )
 
-                elif chave == 'moeda':
+                elif chave == 'moeda' and 'moeda' in self.filtros:
                     self.moeda.append( valor.strip() )
 
-                elif chave == 'preco_abertura':
+                elif (
+                    chave == 'preco_abertura' and
+                    'preco_abertura' in self.filtros
+                ):
                     self.preco_abertura.append(
                         float( valor.strip() ) / 1e2
                     )
 
-                elif chave == 'preco_maximo':
+                elif chave == 'preco_maximo' and 'preco_maximo' in self.filtros:
                     self.preco_maximo.append(
                         float( valor.strip() ) / 1e2
                     )
 
-                elif chave == 'preco_minimo':
+                elif chave == 'preco_minimo' and 'preco_minimo' in self.filtros:
                     self.preco_minimo.append(
                         float( valor.strip() ) / 1e2
                     )
 
-                elif chave == 'preco_medio':
+                elif chave == 'preco_medio' and 'preco_medio' in self.filtros:
                     self.preco_medio.append(
                         float( valor.strip() ) / 1e2
                     )
 
-                elif chave == 'preco_ultimo':
+                elif chave == 'preco_ultimo' and 'preco_ultimo' in self.filtros:
                     self.preco_ultimo.append(
                         float( valor.strip() ) / 1e2
                     )
 
-                elif chave == 'preco_melhor_compra':
+                elif (
+                    chave == 'preco_melhor_compra' and
+                    'preco_melhor_compra' in self.filtros
+                ):
                     self.preco_melhor_compra.append(
                         float( valor.strip() ) / 1e2
                     )
 
-                elif chave == 'preco_melhor_venda':
+                elif (
+                    chave == 'preco_melhor_venda' and
+                    'preco_melhor_venda' in self.filtros
+                ):
                     self.preco_melhor_venda.append(
                         float( valor.strip() ) / 1e2
                     )
 
-                elif chave == 'num_negocios':
+                elif chave == 'num_negocios' and 'num_negocios' in self.filtros:
                     self.num_negocios.append(
                         float( valor.strip() )
                     )
 
-                elif chave == 'qtde_titulos':
+                elif chave == 'qtde_titulos' and 'qtde_titulos' in self.filtros:
                     self.qtde_titulos.append(
                         float( valor.strip() )
                     )
 
-                elif chave == 'vol_titulos':
+                elif chave == 'vol_titulos' and 'vol_titulos' in self.filtros:
                     self.vol_titulos.append(
                         float( valor.strip() ) / 1e2
                     )
 
-                elif chave == 'preco_exerc':
+                elif chave == 'preco_exerc' and 'preco_exerc' in self.filtros:
                     self.preco_exerc.append(
                         float( valor.strip() ) / 1e2
                     )
 
-                elif chave == 'indicador_correcao':
+                elif (
+                    chave == 'indicador_correcao' and
+                    'indicador_correcao' in self.filtros
+                ):
                     self.indicador_correcao.append( valor.strip() )
 
-                elif chave == 'data_vencimento':
+                elif (
+                    chave == 'data_vencimento' and
+                    'data_vencimento' in self.filtros
+                ):
                     self.data_vencimento.append(
                         datetime.strptime( valor, '%Y%m%d' )
                     )
 
-                elif chave == 'fator_cotacao':
+                elif (
+                    chave == 'fator_cotacao' and
+                    'fator_cotacao' in self.filtros
+                ):
                     self.fator_cotacao.append(
                         int( valor.strip() )
                     )
 
-                elif chave == 'preco_exerc_pontos':
+                elif (
+                    chave == 'preco_exerc_pontos' and
+                    'preco_exerc_pontos' in self.filtros
+                ):
                     self.preco_exerc_pontos.append(
                         float( valor.strip() ) / 100e6
                     )
 
-                elif chave == 'cod_isi':
+                elif chave == 'cod_isi' and 'cod_isi' in self.filtros:
                     self.cod_isi.append( valor.strip() )
 
-                elif chave == 'distribuicao_papel':
+                elif (
+                    chave == 'distribuicao_papel' and
+                    'distribuicao_papel' in self.filtros
+                ):
                     self.distribuicao_papel.append( valor.strip() )
 
 
@@ -598,3 +602,5 @@ class BovesParser( object ):
     preco_exerc_pontos = []
     cod_isi = []
     distribuicao_papel = []
+
+    filtros = []
