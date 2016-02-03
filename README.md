@@ -1,6 +1,10 @@
 # BovesParser
 Um parser para os arquivos de histórico de cotações da BM&amp;F Bovespa
 
+##### Dependências
+* [pymongo](https://github.com/mongodb/mongo-python-driver) - Driver MongoDb
+* [tqdm](https://github.com/tqdm/tqdm) - Barra de progresso
+
 ##### Links úteis
 ###### Cotações históricas
 * [Cotações Históricas](http://www.bmfbovespa.com.br/pt-br/cotacoes-historicas/FormSeriesHistoricas.asp) - Busca por cotações históricas

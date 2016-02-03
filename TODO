@@ -1,16 +1,17 @@
 BovesParser:
- ☐ Traduzir código para inglês @low @created(16-01-11 13:14)
+ ☐ Traduzir código/comentários para inglês @low @created(16-01-11 13:14)
  ☐ Documentar código @high
 
 --- ✄ -------------------------
 
 src/bovesparser.py:
- ☐ Implementar filtros @exportar_sql @low @created(16-01-11 13:11)
- ☐ Implementar outros formatos suportados de SQL (Oracle, MySQL) @exportar_sql @low @created(16-01-11 13:11)
+ ☐ Implementar outros formatos de SQL (Oracle, MySQL) @exportar_sql @low @created(16-01-11 13:11)
  ☐ Implementar @exportar_xlsx @low @created(16-01-11 13:13)
-
-
 
 ＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿
 Archive:
+ ✔ Implementar exemplos (main.py) @done (16-02-03 16:10) @project(BovesParser)
+ ✔ Implementar filtros @created(16-02-03 12:09) @done (16-02-03 16:09) @project(src/bovesparser.py)
+ ✔ Implementar barra de progresso @created(16-02-02 12:08) @done (16-02-03 16:08) @project(src/bovesparser.py)
+ ✔ Implementar seleção de colunas @low @created(16-01-11 13:11) @done (16-01-19 10:23) @project(src/bovesparser.py)
  ✔ Implementar @exportar_csv @low @created(16-01-11 13:13) @done (16-01-11 14:09)
