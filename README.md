@@ -36,7 +36,7 @@ if __name__ == '__main__':
 
     ano = 2015
 
-    parser = BovesParser( 'data/COTAHIST_A{0}.TXT'.format( ano ) )
+    parser = B3Parser( 'data/COTAHIST_A{0}.TXT'.format( ano ) )
 
     parser.ler_arquivo( cols_sel = cols_sel, filtros = filtros )
 
