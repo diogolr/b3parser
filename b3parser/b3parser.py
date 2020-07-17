@@ -1,4 +1,4 @@
-# -*- encoding: utf-8 -*-
+# -*- coding: utf-8 -*-
 import csv
 import json
 import locale
@@ -8,14 +8,14 @@ import re
 from datetime import datetime
 from bson import json_util
 from pymongo import MongoClient
-from src.linecount import rawbigcount
-from src.regex import regex_cabecalho
-from src.regex import regex_cauda
-from src.regex import regex_cotacao
+from .linecount import rawbigcount
+from .regex import regex_cabecalho
+from .regex import regex_cauda
+from .regex import regex_cotacao
 from tqdm import tqdm
 
 
-class BovesParser( object ):
+class B3Parser( object ):
     # --------------------------------------------------------------------------
     # Atributos estáticos
     # --------------------------------------------------------------------------

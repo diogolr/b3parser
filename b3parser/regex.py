@@ -1,4 +1,4 @@
-# -*- encoding: utf-8 -*-
+# -*- coding: utf-8 -*-
 # ##############################################################################
 # O formato do arquivo COTAHIST.AAAA.TXT é descrito com detalhes no arquivo
 # disponibilizado em '../info/Serieshistoricas_Layout.pdf'

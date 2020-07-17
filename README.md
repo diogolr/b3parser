@@ -1,10 +1,10 @@
-# BovesParser
-Um parser para os arquivos de histórico de cotações da BM&amp;F Bovespa
+# B3Parser
+Um parser para os arquivos de histórico de cotações da B3
 
 ##### Exemplo de utilização (main.py)
 
 ```python
-from src import BovesParser
+from b3parser import B3Parser
 
 if __name__ == '__main__':
     cols_sel = [
@@ -48,21 +48,22 @@ if __name__ == '__main__':
 ##### Links úteis
 ###### Dependências
 * [pymongo](https://github.com/mongodb/mongo-python-driver) - Driver MongoDb
+* [psycopg2](https://www.psycopg.org/) - Driver PostgreSQL
 * [tqdm](https://github.com/tqdm/tqdm) - Barra de progresso
 
 ###### Cotações históricas
-* [Cotações Históricas](http://www.bmfbovespa.com.br/pt-br/cotacoes-historicas/FormSeriesHistoricas.asp) - Busca por cotações históricas
-* [Layout](http://www.bmfbovespa.com.br/pt-br/download/SeriesHistoricas_Layout.pdf) das cotações históricas
+* [Cotações Históricas](http://www.b3.com.br/pt_br/market-data-e-indices/servicos-de-dados/market-data/historico/mercado-a-vista/cotacoes-historicas/) - Busca por cotações históricas
+* [Layout](http://www.b3.com.br/data/files/C8/F3/08/B4/297BE410F816C9E492D828A8/SeriesHistoricas_Layout.pdf) das cotações históricas
 
 ###### Arquivos de cotações históricas
-* [Anuais](http://www.bmfbovespa.com.br/InstDados/SerHist/COTAHIST_AYYYY.ZIP): Formato `COTAHIST_A`**`AAAA`**`.ZIP`
-* [Mensais](http://www.bmfbovespa.com.br/InstDados/SerHist/COTAHIST_MMMAAAA.ZIP) (*últimos 12 meses*): Formato `COTAHIST_M`**`MMAAAA`**`.ZIP`
-* [Diárias](http://www.bmfbovespa.com.br/InstDados/SerHist/COTAHIST_DDDMMAAAA.ZIP) (*ano corrente*): Formato `COTAHIST_D`**`DDMMAAAA`**`.ZIP`
+* [Anuais](http://bvmf.bmfbovespa.com.br/InstDados/SerHist/COTAHIST_AAAAA.ZIP): Formato `COTAHIST_A`**`AAAA`**`.ZIP`
+* [Mensais](http://bvmf.bmfbovespa.com.br/InstDados/SerHist/COTAHIST_MMMAAAA.ZIP) (*últimos 12 meses*): Formato `COTAHIST_M`**`MMAAAA`**`.ZIP`
+* [Diárias](http://bvmf.bmfbovespa.com.br/InstDados/SerHist/COTAHIST_DDDMMAAAA.ZIP) (*ano corrente*): Formato `COTAHIST_D`**`DDMMAAAA`**`.ZIP`
 
 ###### Títulos negociáveis
-* [Títulos Negociáveis](http://www.bmfbovespa.com.br/cias-listadas/titulos-negociaveis/BuscaTitulosNegociaveis.aspx): Busca por títulos negociáveis
-* [Títulos Negociados](http://www.bmfbovespa.com.br/suplemento/ExecutaAcaoDownload.asp?arquivo=Titulos_Negociaveis.zip&server=L): Títulos negociados atualmente
-* [Layout](http://www.bmfbovespa.com.br/suplemento/doc/Titulos_Negociaveis.PDF) dos títulos negociáveis
+* [Títulos Negociáveis](http://www.b3.com.br/pt_br/market-data-e-indices/servicos-de-dados/market-data/consultas/mercado-a-vista/titulos-negociaveis/): Busca por títulos negociáveis
+* [Títulos Negociados](http://www.b3.com.br/pt_br/market-data-e-indices/servicos-de-dados/market-data/consultas/boletim-diario/arquivos-para-download/): Títulos negociados atualmente
+* [Glossário](http://www.b3.com.br/pt_br/market-data-e-indices/servicos-de-dados/market-data/consultas/boletim-diario/arquivos-para-download/glossario/) dos títulos negociáveis
 
 ###### Projetos similares no GitHub
 * [Busca 1](https://github.com/search?utf8=%E2%9C%93&q=bovespa)

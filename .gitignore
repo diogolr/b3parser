@@ -59,3 +59,6 @@ target/
 # Sublime Text project files
 *sublime*
 data/*
+
+# VSCode
+*.code-workspace

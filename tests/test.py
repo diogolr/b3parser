@@ -1,6 +1,13 @@
-# -*- encoding: utf-8 -*-
+# -*- coding: utf-8 -*-
+import sys
+import os
 
-from src import BovesParser
+sys.path.insert(
+    0,
+    os.path.abspath( os.path.join( os.path.dirname( __file__ ), '..' ) )
+)
+
+from b3parser import B3Parser
 
 if __name__ == '__main__':
     cols_sel = [
@@ -91,7 +98,7 @@ if __name__ == '__main__':
     # mes = None
     # dia = None
 
-    parser = BovesParser( 'data/COTAHIST_A{0}.TXT'.format( ano ) )
+    parser = B3Parser( 'data/COTAHIST_A{0}.TXT'.format( ano ) )
 
     parser.ler_arquivo( cols_sel = cols_sel, filtros = filtros )
 
